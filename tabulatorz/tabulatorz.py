@@ -1,6 +1,6 @@
+#!/usr/bin/env python3
 import numpy as np
 from colour import Color
-
 
 def row(values, bold=False):
     row_str = ""
