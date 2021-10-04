@@ -23,10 +23,15 @@ def min_max_column(records, column, foo):
 
 def colorize(
         v,
+        s,
         v_min=0,
         v_max=1,
         c_min=(255, 150, 138),
         c_max=(151, 193, 169)):
+    if s == 'l':
+        v_min, v_max = v_max, v_min
+    # Lower is better
+
     colors = list(Color("#FF968A").range_to(Color("#FFFFFF"), 20)) +\
              list(Color("#FFFFFF").range_to(Color("#FFFFFF"), 60)) +\
              list(Color("#FFFFFF").range_to(Color("#97C1A9"), 20))
@@ -61,11 +66,19 @@ def print_table(
         multirow=True,
         midrule_column=None,
         value_columns=[],
-        value_columns_val_foo=lambda x: sum(x) / len(x),
+        columns_scoring=None,
+        value_columns_val_foo=lambda x: float(np.nanmean(x)),
         value_columns_str_foo=lambda x: "${:.3f} \\pm {:.3f}$".format(
-            np.mean(x), np.std(x)),
+            float(np.nanmean(x)), float(np.nanstd(x))),
         caption="table",
         label="tab:table"):
+
+    if columns_scoring is None:
+        # Interpret all columns as (h) higher is better if not specified
+        columns_scoring = ['h'] * len(value_columns)
+    assert len(columns_scoring) == len(value_columns)
+    assert all([el in ['h', 'l'] for el in columns_scoring])
+
     f = open(fname, "w")
 
     if standalone:
@@ -83,10 +96,20 @@ def print_table(
     f.write("\\begin{center}\n")
     f.write("\\adjustbox{max width=\\linewidth, "
             "max totalheight=0.95\\textheight}{\n")
-    f.write("\\begin{tabular}{" + "l" * len(columns) + "}\n")
+    f.write("\\begin{tabular}{" + "c" * len(columns) + "}\n")
 
     f.write("\\toprule\n")
-    f.write(row(columns, bold=True))
+
+    def _add_scoring_suffix(col):
+        if not col in value_columns:
+            return col
+
+        s = columns_scoring[value_columns.index(col)]
+        suffix = '$(\\uparrow)$' if s == 'h' else '$(\\downarrow)$'
+        return f'{col}{suffix}'
+
+
+    f.write(row(list(map(_add_scoring_suffix, columns)), bold=True))
     f.write("\\midrule\n")
 
     # compute column minimums and maximums for coloring purporses
@@ -114,8 +137,10 @@ def print_table(
             if column in value_columns:
                 color_str = colorize(
                     value_columns_val_foo(value),
+                    columns_scoring[value_columns.index(column)],
                     column_min[column],
-                    column_max[column])
+                    column_max[column],
+                )
                 row_values.append(color_str + value_columns_str_foo(value))
             else:
                 multirow_count = count(
@@ -145,6 +170,10 @@ def print_table(
 
     f.close()
 
+def render_pdf(fpath):
+    import subprocess
+    subprocess.run(["latexmk", "--shell-escape", "--pdf", str(fpath)])
+
 
 def dummy_test():
     records = []
@@ -163,7 +192,7 @@ def dummy_test():
                         "ACC@5": np.random.rand(10).tolist(),
                         "ECE": np.random.rand(10).tolist(),
                         "NLL": np.random.rand(10).tolist()})
-
+    import ipdb; ipdb.set_trace()
     print_table(
         records,
         midrule_column="algorithm",
