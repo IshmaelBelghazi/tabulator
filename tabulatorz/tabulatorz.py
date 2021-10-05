@@ -63,11 +63,13 @@ def count(records, columns, values):
     return the_count
 
 def mean_std(els):
-    return "${:.3f} \\pm {:.3f}$".format(float(np.nanmean(els)), float(np.nanstd(els)))
+    return "${:.3f} \\pm {:.3f}$".format(
+        float(np.nanmean(els)), float(np.nanstd(els)))
 
 def mean_std_with_counts(els):
     count = len(list(filter(lambda el: not np.isnan(el), els)))
-    return "${:.3f} \\pm {:.3f}\,({})$".format(float(np.nanmean(els)), float(np.nanstd(els)), count)
+    return "${:.3f} \\pm {:.3f}\,({})$".format(
+        float(np.nanmean(els)), float(np.nanstd(els)), count)
 
 def print_table(
         records,
@@ -109,7 +111,7 @@ def print_table(
     f.write("\\toprule\n")
 
     def _add_scoring_suffix(col):
-        if not col in value_columns:
+        if col not in value_columns:
             return col
 
         s = columns_scoring[value_columns.index(col)]

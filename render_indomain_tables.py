@@ -8,11 +8,26 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Renders uimnet records')
     parser.add_argument('-r', '--records_file', type=str, required=True, help='Input record')
     parser.add_argument('-o', '--output_dir', type=str, required=True, help='Output folder')
-    parser.add_argument('--exclude', type=str, nargs='*', default=[], help='algorithm to exclude')
+    parser.add_argument('--exclude', type=str, nargs='*', default=[], help='Algorithms to exclude')
     parser.add_argument('--render_pdf', action='store_true')
     parser.add_argument('--with_counts', action='store_true', help='Add value counts')
 
     return parser.parse_args()
+
+
+def sort_algorithms(
+        records, 
+        algorithms=["ERM", "Mixup", "SoftLabeler", "DeepAE", "RND",
+                    "OC", "MIMO", "MCDropout", "DUE", "RBF"]):
+    new_records = []
+    for algorithm in algorithms:
+        for record in records:
+            if record["algorithm"] == algorithm:
+                new_records.append(record)
+
+    return new_records
+
+
 
 def correct_records_types(record):
     record['spectral'] = str(record['spectral'])
@@ -35,6 +50,7 @@ def main(records_file, output_dir, exclude, render_pdf, with_counts):
                 continue
             records = list(map(correct_records_types, records))
             records = [r for r in records if not (r['algorithm'] in exclude)]
+            records = sort_algorithms(records)
             fname = f'indomain_{arch}_{split}.tex'
             label = f'tab:indomain_{arch}_{split}'
             caption = f'In-domain results for {arch} architecture on the {split} split.'
