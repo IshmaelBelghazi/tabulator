@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
+import os
+import subprocess
 import numpy as np
 from colour import Color
+from collections import defaultdict
+
 
 def row(values, bold=False):
     row_str = ""
@@ -32,16 +36,16 @@ def colorize(
         v_min, v_max = v_max, v_min
     # Lower is better
 
-    colors = list(Color("#FF968A").range_to(Color("#FFFFFF"), 20)) +\
-             list(Color("#FFFFFF").range_to(Color("#FFFFFF"), 60)) +\
-             list(Color("#FFFFFF").range_to(Color("#97C1A9"), 20))
+    colors = list(Color("#FF968A").range_to(Color("#FFFFFF"), 10)) +\
+        list(Color("#FFFFFF").range_to(Color("#FFFFFF"), 80)) +\
+        list(Color("#FFFFFF").range_to(Color("#97C1A9"), 10))
 
     p = int((v - v_min) / (v_max - v_min) * 99)
 
     return "\\cellcolor[RGB]{{{}, {}, {}}}".format(
-        colors[p].rgb[0] * 255,
-        colors[p].rgb[1] * 255,
-        colors[p].rgb[2] * 255)
+        int(colors[p].rgb[0] * 255),
+        int(colors[p].rgb[1] * 255),
+        int(colors[p].rgb[2] * 255))
 
 
 def count(records, columns, values):
@@ -63,7 +67,6 @@ def print_table(
         records,
         fname="test.tex",
         standalone=True,
-        multirow=True,
         midrule_column=None,
         value_columns=[],
         columns_scoring=None,
@@ -105,9 +108,8 @@ def print_table(
             return col
 
         s = columns_scoring[value_columns.index(col)]
-        suffix = '$(\\uparrow)$' if s == 'h' else '$(\\downarrow)$'
+        suffix = ' $(\\uparrow)$' if s == 'h' else ' $(\\downarrow)$'
         return f'{col}{suffix}'
-
 
     f.write(row(list(map(_add_scoring_suffix, columns)), bold=True))
     f.write("\\midrule\n")
@@ -121,7 +123,9 @@ def print_table(
     if midrule_column is not None:
         place_midrule = records[0][midrule_column]
 
-    for r, record in enumerate(records):
+    printed_multirow = defaultdict(lambda: False)
+
+    for record in records:
         if midrule_column is not None and\
            place_midrule != record[midrule_column]:
             f.write("\\midrule\n")
@@ -146,16 +150,16 @@ def print_table(
                 multirow_count = count(
                     records, observed_columns, observed_values)
 
-                if not multirow or multirow_count == 1:
-                    row_values.append(value)
-                elif multirow:
-                    if r % multirow_count == 0:
-                        row_values.append(
-                            "\\multirow{" +
-                            str(multirow_count) +
-                            "}{*}{" + value + "}")
-                    else:
-                        row_values.append(" ")
+                if not printed_multirow[tuple(observed_values)]:
+                    multirow_str = \
+                        "\\multirow{" +\
+                        str(multirow_count) +\
+                        "}{*}{" + value + "}"
+                    row_values.append(multirow_str.ljust(30))
+                    printed_multirow[tuple(observed_values)] = True
+                else:
+                    row_values.append(" ".ljust(30))
+
         f.write(row(row_values))
 
     f.write("\\bottomrule\n")
@@ -171,37 +175,9 @@ def print_table(
     f.close()
 
 def render_pdf(fpath):
-    import subprocess
-    subprocess.run(["latexmk", "--shell-escape", "--pdf", str(fpath)])
-
-
-def dummy_test():
-    records = []
-
-    for algorithm in ["ERM", "MCDropout", "MIMO",
-                      "Mixup", "OC", "RND", "SoftLabeler"]:
-        for spectral in ["False", "True"]:
-            for calibration in ["initial", "learned"]:
-                for k in ["1", "5"]:
-                    records.append({
-                        "algorithm": algorithm,
-                        "spectral": spectral,
-                        "calibration": calibration,
-                        "k": k,
-                        "ACC@1": np.random.rand(10).tolist(),
-                        "ACC@5": np.random.rand(10).tolist(),
-                        "ECE": np.random.rand(10).tolist(),
-                        "NLL": np.random.rand(10).tolist()})
-    import ipdb; ipdb.set_trace()
-    print_table(
-        records,
-        midrule_column="algorithm",
-        value_columns=["ACC@1", "ACC@5", "ECE", "NLL"])
-
-    import subprocess
-    subprocess.run(["latexmk", "--shell-escape", "--pdf", "test.tex"])
-    subprocess.run(["open", "test.pdf"])
-
-
-if __name__ == "__main__":
-    dummy_test()
+    subprocess.run([
+        "latexmk",
+        "--shell-escape",
+        "--pdf",
+        "--outdir={}".format(os.path.dirname(fpath)),
+        str(fpath)])

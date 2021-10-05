@@ -26,6 +26,8 @@ def main(records_file, output_dir, exclude, render_pdf):
 
     for arch, split_records in all_records.items():
         for split, records in split_records.items():
+            if split != "val":
+                continue
             records = list(map(correct_records_types, records))
             records = [r for r in records if not (r['algorithm'] in exclude)]
             fname = f'indomain_{arch}_{split}.tex'
