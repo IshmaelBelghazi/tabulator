@@ -31,14 +31,17 @@ def colorize(
         v_min=0,
         v_max=1,
         c_min=(255, 150, 138),
-        c_max=(151, 193, 169)):
+        c_max=(151, 193, 169),
+        num_white=80):
     if s == 'l':
         v_min, v_max = v_max, v_min
     # Lower is better
+    num_color = (100 - num_white) // 2
 
-    colors = list(Color("#FF968A").range_to(Color("#FFFFFF"), 10)) +\
-        list(Color("#FFFFFF").range_to(Color("#FFFFFF"), 80)) +\
-        list(Color("#FFFFFF").range_to(Color("#97C1A9"), 10))
+    colors =\
+        list(Color("#FF968A").range_to(Color("#FFFFFF"), num_color)) +\
+        list(Color("#FFFFFF").range_to(Color("#FFFFFF"), num_white)) +\
+        list(Color("#FFFFFF").range_to(Color("#97C1A9"), num_color))
 
     p = int((v - v_min) / (v_max - v_min) * 99)
 
@@ -80,6 +83,7 @@ def print_table(
         columns_scoring=None,
         value_columns_val_foo=lambda x: float(np.nanmean(x)),
         value_columns_str_foo=mean_std,
+        num_white=80,
         caption="table",
         label="tab:table"):
 
@@ -102,7 +106,7 @@ def print_table(
 
     columns = list(records[0].keys())
 
-    f.write("\\begin{table}\n")
+    f.write("\\begin{table}[h!]\n")
     f.write("\\begin{center}\n")
     f.write("\\adjustbox{max width=\\linewidth, "
             "max totalheight=0.95\\textheight}{\n")
@@ -151,6 +155,7 @@ def print_table(
                     columns_scoring[value_columns.index(column)],
                     column_min[column],
                     column_max[column],
+                    num_white=num_white
                 )
                 row_values.append(color_str + value_columns_str_foo(value))
             else:
