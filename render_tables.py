@@ -32,6 +32,8 @@ def correct_records_types(record):
     record['spectral'] = str(record['spectral'])
     record['k'] = str(record['k'])
     record['calibration'] = str(record['calibration'])
+    if "arch" in record:
+        del record["arch"]
     return record
 
 def main(**kwargs):
