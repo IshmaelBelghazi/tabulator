@@ -65,6 +65,7 @@ def render_indomain(records_file, output_dir, exclude, render_pdf, with_counts):
                                    columns_scoring=['h', 'h', 'l', 'l'],
                                    num_white=70 if arch == "resnet18" else 90,
                                    caption=caption,
+                                   standalone=render_pdf,
                                    label=label
                                    )
             if render_pdf:
@@ -97,7 +98,7 @@ def render_outdomain(records_file, output_dir, exclude, render_pdf, with_counts)
                                    num_white=70 if measure != "Entropy" else 40,
                                    caption=caption,
                                    label=label,
-                                   standalone=args.render_pdf
+                                   standalone=render_pdf
                                    )
             if render_pdf:
                 tabulatorz.render_pdf(fpath)
