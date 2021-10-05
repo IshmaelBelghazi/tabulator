@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-
-
-#!/usr/bin/env python3
 import pickle
 import argparse
 from pathlib import Path
@@ -13,6 +10,7 @@ def parse_arguments():
     parser.add_argument('-o', '--output_dir', type=str, required=True, help='Output folder')
     parser.add_argument('--exclude', type=str, nargs='*', default=[], help='algorithm to exclude')
     parser.add_argument('--render_pdf', action='store_true')
+    parser.add_argument('--with_counts', action='store_true', help='Add value counts')
 
     return parser.parse_args()
 
@@ -21,11 +19,17 @@ def correct_records_types(record):
     record['k'] = str(record['k'])
     return record
 
-def main(records_file, output_dir, exclude, render_pdf):
+def main(records_file, output_dir, exclude, render_pdf, with_counts):
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     with open(records_file, 'rb') as fp:
         all_records = pickle.load(fp)
+
+
+    values_columns_str_foo = tabulatorz.mean_std
+    if with_counts:
+        values_columns_str_foo = tabulatorz.mean_std_with_counts
+
 
     for arch, split_records in all_records.items():
         for measure, records in split_records.items():
@@ -37,6 +41,7 @@ def main(records_file, output_dir, exclude, render_pdf):
             fpath = (output_path / fname).absolute()
             tabulatorz.print_table(records, fname=str(fpath),
                                    midrule_column='algorithm',
+                                   value_columns_str_foo=values_columns_str_foo,
                                    value_columns=['AUC', 'InAsIn', 'OutAsOut'],
                                    columns_scoring=['h', 'h', 'h'],
                                    caption=caption,
