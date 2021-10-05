@@ -177,7 +177,7 @@ def print_table(
 
 def render_pdf(fpath):
     import subprocess
-    subprocess.run(["latexmk", "--shell-escape", "--pdf", str(fpath)])
+    subprocess.run(["latexmk", "--shell-escape", "--pdf", "-cd", str(fpath)])
 
 
 def dummy_test():
@@ -197,14 +197,13 @@ def dummy_test():
                         "ACC@5": np.random.rand(10).tolist(),
                         "ECE": np.random.rand(10).tolist(),
                         "NLL": np.random.rand(10).tolist()})
-    import ipdb; ipdb.set_trace()
     print_table(
         records,
         midrule_column="algorithm",
         value_columns=["ACC@1", "ACC@5", "ECE", "NLL"])
 
     import subprocess
-    subprocess.run(["latexmk", "--shell-escape", "--pdf", "test.tex"])
+    subprocess.run(["latexmk", "--shell-escape", "--pdf", "-cd", "test.tex"])
     subprocess.run(["open", "test.pdf"])
 
 
