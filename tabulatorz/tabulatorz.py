@@ -62,6 +62,12 @@ def count(records, columns, values):
 
     return the_count
 
+def mean_std(els):
+    return "${:.3f} \\pm {:.3f}$".format(float(np.nanmean(els)), float(np.nanstd(els)))
+
+def mean_std_with_counts(els):
+    count = len(list(filter(lambda el: not np.isnan(el), els)))
+    return "${:.3f} \\pm {:.3f}\,({})$".format(float(np.nanmean(els)), float(np.nanstd(els)), count)
 
 def print_table(
         records,
@@ -71,8 +77,7 @@ def print_table(
         value_columns=[],
         columns_scoring=None,
         value_columns_val_foo=lambda x: float(np.nanmean(x)),
-        value_columns_str_foo=lambda x: "${:.3f} \\pm {:.3f}$".format(
-            float(np.nanmean(x)), float(np.nanstd(x))),
+        value_columns_str_foo=mean_std,
         caption="table",
         label="tab:table"):
 
