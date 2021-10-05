@@ -50,18 +50,20 @@ def render_indomain(records_file, output_dir, exclude, render_pdf, with_counts):
 
     for arch, split_records in all_records.items():
         for split, records in split_records.items():
+            if split != 'val':
+                continue
             records = list(map(correct_records_types, records))
             records = [r for r in records if not (r['algorithm'] in exclude)]
             fname = f'indomain_{arch}_{split}.tex'
             label = f'tab:indomain_{arch}_{split}'
-            caption = f'In-domain results for {arch} architecture on the {split} split.'
+            caption = 'In-domain results for {}.'.format("ResNet18" if arch == "resnet18" else "ResNet50")
             fpath = (output_path / fname).absolute()
             tabulatorz.print_table(records, fname=str(fpath),
                                    midrule_column='algorithm',
                                    value_columns_str_foo=values_columns_str_foo,
                                    value_columns=["ACC@1", "ACC@5", "ECE", "NLL"],
                                    columns_scoring=['h', 'h', 'l', 'l'],
-                                   num_white=70 if measure != "Entropy" else 40,
+                                   num_white=70 if arch == "resnet18" else 90,
                                    caption=caption,
                                    label=label
                                    )

@@ -44,7 +44,6 @@ def colorize(
         list(Color("#FFFFFF").range_to(Color("#97C1A9"), num_color))
 
     p = int((v - v_min) / (v_max - v_min) * 99)
-
     return "\\cellcolor[RGB]{{{}, {}, {}}}".format(
         int(colors[p].rgb[0] * 255),
         int(colors[p].rgb[1] * 255),
