@@ -14,6 +14,20 @@ def parse_arguments():
 
     return parser.parse_args()
 
+
+def sort_algorithms(
+        records, 
+        algorithms=["ERM", "Mixup", "SoftLabeler", "DeepAE", "RND",
+                    "OC", "MIMO", "MCDropout", "DUE", "RBF"]):
+    new_records = []
+    for algorithm in algorithms:
+        for record in records:
+            if record["algorithm"] == algorithm:
+                new_records.append(record)
+
+    return new_records
+
+
 def correct_records_types(record):
     record['spectral'] = str(record['spectral'])
     record['k'] = str(record['k'])
@@ -47,6 +61,7 @@ def render_indomain(records_file, output_dir, exclude, render_pdf, with_counts):
                                    value_columns_str_foo=values_columns_str_foo,
                                    value_columns=["ACC@1", "ACC@5", "ECE", "NLL"],
                                    columns_scoring=['h', 'h', 'l', 'l'],
+                                   num_white=70 if measure != "Entropy" else 40,
                                    caption=caption,
                                    label=label
                                    )
@@ -67,17 +82,20 @@ def render_outdomain(records_file, output_dir, exclude, render_pdf, with_counts)
         for measure, records in split_records.items():
             records = list(map(correct_records_types, records))
             records = [r for r in records if not (r['algorithm'] in exclude)]
+            records = sort_algorithms(records)
             fname = f'outdomain_{arch}_{measure}.tex'
             label = f'tab:outdomain_{arch}_{measure}'
-            caption = f'Out of domain results for {arch} architecture using the {measure} measure.'
+            caption = "Out-domain results for {} using measure ``{}''".format("ResNet18" if arch == "resnet18" else "ResNet50", measure)
             fpath = (output_path / fname).absolute()
             tabulatorz.print_table(records, fname=str(fpath),
                                    midrule_column='algorithm',
                                    value_columns_str_foo=values_columns_str_foo,
                                    value_columns=['AUC', 'InAsIn', 'OutAsOut'],
                                    columns_scoring=['h', 'h', 'h'],
+                                   num_white=70 if measure != "Entropy" else 40,
                                    caption=caption,
-                                   label=label
+                                   label=label,
+                                   standalone=args.render_pdf
                                    )
             if render_pdf:
                 tabulatorz.render_pdf(fpath)

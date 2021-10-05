@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
+import os
+import subprocess
 import numpy as np
 from colour import Color
+from collections import defaultdict
+
 
 def row(values, bold=False):
     row_str = ""
@@ -27,21 +31,24 @@ def colorize(
         v_min=0,
         v_max=1,
         c_min=(255, 150, 138),
-        c_max=(151, 193, 169)):
+        c_max=(151, 193, 169),
+        num_white=80):
     if s == 'l':
         v_min, v_max = v_max, v_min
     # Lower is better
+    num_color = (100 - num_white) // 2
 
-    colors = list(Color("#FF968A").range_to(Color("#FFFFFF"), 20)) +\
-             list(Color("#FFFFFF").range_to(Color("#FFFFFF"), 60)) +\
-             list(Color("#FFFFFF").range_to(Color("#97C1A9"), 20))
+    colors =\
+        list(Color("#FF968A").range_to(Color("#FFFFFF"), num_color)) +\
+        list(Color("#FFFFFF").range_to(Color("#FFFFFF"), num_white)) +\
+        list(Color("#FFFFFF").range_to(Color("#97C1A9"), num_color))
 
     p = int((v - v_min) / (v_max - v_min) * 99)
 
     return "\\cellcolor[RGB]{{{}, {}, {}}}".format(
-        colors[p].rgb[0] * 255,
-        colors[p].rgb[1] * 255,
-        colors[p].rgb[2] * 255)
+        int(colors[p].rgb[0] * 255),
+        int(colors[p].rgb[1] * 255),
+        int(colors[p].rgb[2] * 255))
 
 
 def count(records, columns, values):
@@ -59,22 +66,24 @@ def count(records, columns, values):
     return the_count
 
 def mean_std(els):
-    return "${:.3f} \\pm {:.3f}$".format(float(np.nanmean(els)), float(np.nanstd(els)))
+    return "${:.3f} \\pm {:.3f}$".format(
+        float(np.nanmean(els)), float(np.nanstd(els)))
 
 def mean_std_with_counts(els):
     count = len(list(filter(lambda el: not np.isnan(el), els)))
-    return "${:.3f} \\pm {:.3f}\,({})$".format(float(np.nanmean(els)), float(np.nanstd(els)), count)
+    return "${:.3f} \\pm {:.3f}\,({})$".format(
+        float(np.nanmean(els)), float(np.nanstd(els)), count)
 
 def print_table(
         records,
         fname="test.tex",
         standalone=True,
-        multirow=True,
         midrule_column=None,
         value_columns=[],
         columns_scoring=None,
         value_columns_val_foo=lambda x: float(np.nanmean(x)),
         value_columns_str_foo=mean_std,
+        num_white=80,
         caption="table",
         label="tab:table"):
 
@@ -97,7 +106,7 @@ def print_table(
 
     columns = list(records[0].keys())
 
-    f.write("\\begin{table}\n")
+    f.write("\\begin{table}[h!]\n")
     f.write("\\begin{center}\n")
     f.write("\\adjustbox{max width=\\linewidth, "
             "max totalheight=0.95\\textheight}{\n")
@@ -106,13 +115,12 @@ def print_table(
     f.write("\\toprule\n")
 
     def _add_scoring_suffix(col):
-        if not col in value_columns:
+        if col not in value_columns:
             return col
 
         s = columns_scoring[value_columns.index(col)]
-        suffix = '$(\\uparrow)$' if s == 'h' else '$(\\downarrow)$'
+        suffix = ' $(\\uparrow)$' if s == 'h' else ' $(\\downarrow)$'
         return f'{col}{suffix}'
-
 
     f.write(row(list(map(_add_scoring_suffix, columns)), bold=True))
     f.write("\\midrule\n")
@@ -126,7 +134,9 @@ def print_table(
     if midrule_column is not None:
         place_midrule = records[0][midrule_column]
 
-    for r, record in enumerate(records):
+    printed_multirow = defaultdict(lambda: False)
+
+    for record in records:
         if midrule_column is not None and\
            place_midrule != record[midrule_column]:
             f.write("\\midrule\n")
@@ -145,22 +155,23 @@ def print_table(
                     columns_scoring[value_columns.index(column)],
                     column_min[column],
                     column_max[column],
+                    num_white=num_white
                 )
                 row_values.append(color_str + value_columns_str_foo(value))
             else:
                 multirow_count = count(
                     records, observed_columns, observed_values)
 
-                if not multirow or multirow_count == 1:
-                    row_values.append(value)
-                elif multirow:
-                    if r % multirow_count == 0:
-                        row_values.append(
-                            "\\multirow{" +
-                            str(multirow_count) +
-                            "}{*}{" + value + "}")
-                    else:
-                        row_values.append(" ")
+                if not printed_multirow[tuple(observed_values)]:
+                    multirow_str = \
+                        "\\multirow{" +\
+                        str(multirow_count) +\
+                        "}{*}{" + value + "}"
+                    row_values.append(multirow_str.ljust(30))
+                    printed_multirow[tuple(observed_values)] = True
+                else:
+                    row_values.append(" ".ljust(30))
+
         f.write(row(row_values))
 
     f.write("\\bottomrule\n")
